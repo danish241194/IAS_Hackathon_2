@@ -2,7 +2,6 @@ from flask import Flask,request
 import random 
 app = Flask(__name__)
 
-
 free_list = ["ip4:port4","ip5:port5","ip6:port7","ip7:port7"];
 service_registry = {"monitoring":"localhost:5050"};
 
