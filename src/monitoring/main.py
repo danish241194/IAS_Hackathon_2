@@ -3,7 +3,7 @@ import random
 app = Flask(__name__)
 
 
-load = {"ip1:username1:password1":200,"ip2:username2:password2":1000,"ip3:username3:password3":1000};
+servers = ["127.0.0.1:11000","127.0.0.1:11001","127.0.0.1:11002","127.0.0.1:11003","127.0.0.1:11004"];
 
 
 @app.route("/monitoring/get_load")
