@@ -11,7 +11,7 @@ def load_balance():
 	loads=[]
 
 	for i in range(data["n_servers"]):
-		if(data["server_load"][i]["load_average_1"]/data["server_load"]["n_cores"] >= 0.8 or data["server_load"][i]["load_average_5"]/data["server_load"]["n_cores"] >= 0.7):
+		if(data["server_load"][i]["load_average_1"]/data["server_load"][i]["n_cores"] >= 0.8 or data["server_load"][i]["load_average_5"]/data["server_load"][i]["n_cores"] >= 0.7):
 			continue
 		coeff1=1/((3/data["server_load"][i]["free_cpu"])+(1/data["server_load"][i]["free_mem"]))
 		coeff2=data["server_load"][i]["number_of_events_per_sec"]/10000 + min(2,data["server_load"][i]["free_RAM"])
@@ -21,9 +21,14 @@ def load_balance():
 
 		loads.append((coeff,data["server_load"][i]["ip"],data["server_load"][i]["port"]))
 
-	
+	if(len(loads)==0):
+		return "NO_MACHINE","","","",""
+	else:
+		print(loads)
+		loads.sort(key = lambda x:x[0],reverse=True)
+		print(loads)
+		return "",loads[0][1],loads[0][2],"",""
 
-	return "N_MACHINE","","","",""
 def setup_new_machine(ip,username,password):
 	ssh_client =paramiko.SSHClient()
 	ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
