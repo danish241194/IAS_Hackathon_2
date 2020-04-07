@@ -6,7 +6,14 @@ import json
 from flask import Flask,request,jsonify
 import random
 import json
+import requests
 app = Flask(__name__)
+
+
+service_life_cycle_port = 8080
+
+
+
 class Scheduler:
     def __init__(self):   
         self.job_dict = {}
@@ -15,35 +22,42 @@ class Scheduler:
             schedule.run_pending() 
             time.sleep(10)
             print("running")
+    def send_request_to_service_life_cyle(self,username,application_id,service_name,service_instance_id,type_):
+    	response = {"username":username,"application_id":application_id,"service_name":service_name,"service_id":service_instance_id,"type":type_}
+    	res = requests.post('http://localhost:'+str(service_life_cycle_port)+'/start_stop_service', json=response)
+    
     def run(self):
         t1 = threading.Thread(target=self.pending_jobs) 
         t1.start() 
     def exit_service(self,service_instance_id):
-        service_instance_id = service_instance_id[0]
+        service_instance_id,username,application_id,service_name = service_instance_id[0],service_instance_id[1],service_instance_id[2],service_instance_id[3]
         print("send request to service life cycle manager to stop service",service_instance_id)
         #send request to service life cycle manager to cancel service 
+        self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"stop")
         schedule.cancel_job(self.job_dict[service_instance_id])
         
     def run_service(self,service_detail):
         username,application_id,service_name,end,service_instance_id = service_detail[0],service_detail[1],service_detail[2],service_detail[3],service_detail[4]
         print("send request to service life cycle manager to start service ",service_instance_id)
         #send request to service life cycle manager to start service
-        job_id = schedule.every().day.at(end).do(self.exit_service,(service_instance_id,)) 
+        self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
+        job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         self.job_dict[service_instance_id]=job_id
         
     def run_service_period(self,service_detail):
         username,application_id,service_name,end,service_instance_id = service_detail[0],service_detail[1],service_detail[2],service_detail[3],service_detail[4]
         print("send request to service life cycle manager to start service ",service_instance_id)
         #send request to service life cycle manager to start service
-        job_id = schedule.every().day.at(end).do(self.exit_service,(service_instance_id,)) 
+        self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
+        job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         self.job_dict[service_instance_id]=job_id
         
     def run_service_once(self,service_detail):
         username,application_id,service_name,end,service_instance_id = service_detail[0],service_detail[1],service_detail[2],service_detail[3],service_detail[4]
         print("send request to service life cycle manager to start service ",service_instance_id)
-
         #send request to service life cycle manager to start service
-        job_id =schedule.every().day.at(end).do(self.exit_service,(service_instance_id,)) 
+        self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
+        job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         try:
             if(self.job_dict[service_instance_id]):
                 print("here")
@@ -85,7 +99,7 @@ class Scheduler:
                 self.job_dict[service_instance_id]=job_id
             else:
                 job_id = schedule.every().day.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
-            self.job_dict[service_instance_id]=job_id
+                self.job_dict[service_instance_id]=job_id
         elif day is None and period is not None:
             schedule.every(period).days.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
             self.job_dict[service_instance_id]=job_id

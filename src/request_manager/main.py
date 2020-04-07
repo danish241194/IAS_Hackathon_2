@@ -7,10 +7,10 @@ data = {
   "singleinstance":True,
   "time": {
     "start": [
-      "17:15",
+      "NOW",
     ],
     "end": [
-      "17:16",
+      "01:31",
     ]
   }
 }
