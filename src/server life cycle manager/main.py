@@ -49,7 +49,6 @@ def allocate_new_machine():
 		setup_new_machine(ip,username,password)
 	return result,ip,username,password,port
 
-
 @app.route("/server_lcm/allocate_server")
 def allocate_server():
 	result,ip,username,password,port = load_balance()

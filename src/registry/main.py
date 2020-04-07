@@ -2,7 +2,7 @@ from flask import Flask,request
 import random 
 app = Flask(__name__)
 
-free_list = ["172.17.0.3:root:pppppp:xxxx","172.17.0.33:root:pppppp:xxxx","172.17.0.44:root:pppppp:xxxx","172.17.0.1:root:pppppp:xxxx"];
+free_list = ["172.17.0.3:root:pppppp:22","172.17.0.33:root:pppppp:22","172.17.0.44:root:pppppp:22","172.17.0.1:root:pppppp:22"];
 service_registry = {"monitoring":"localhost:5050"};
 
 @app.route("/service_registry/get_free_list")
