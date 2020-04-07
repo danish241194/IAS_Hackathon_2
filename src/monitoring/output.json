@@ -1,0 +1,44 @@
+{
+  "n_servers": 3,
+  "server_load": [
+    {
+      "ip": "127.0.0.1",
+      "port": 10000,
+      "free_cpu": 32.1,
+      "free_mem": 3.1,
+      "number_of_events_per_sec": 22000,
+      "free_RAM": "4.1",
+      "temperature": 19.2,
+      "n_cores": 2,
+      "load_average_1": 1.48,
+      "load_average_5": 0.62,
+      "load_average_15": 0.53
+    },
+    {
+      "ip": "127.0.0.1",
+      "port": 10001,
+      "free_cpu": 72.1,
+      "free_mem": 2.1,
+      "number_of_events_per_sec": 52000,
+      "free_RAM": "4.1",
+      "temperature": 21.2,
+      "n_cores": 4,
+      "load_average_1": 2.81,
+      "load_average_5": 0.62,
+      "load_average_15": 0.53
+    },
+    {
+      "ip": "127.0.0.1",
+      "port": 10002,
+      "free_cpu": 52.1,
+      "free_mem": 4.1,
+      "number_of_events_per_sec": 42000,
+      "free_RAM": "4.1",
+      "temperature": 15.2,
+      "n_cores": 8,
+      "load_average_1": 3.1,
+      "load_average_5": 0.62,
+      "load_average_15": 0.53
+    }
+  ]
+}
