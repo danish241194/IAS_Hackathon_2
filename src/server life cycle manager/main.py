@@ -19,7 +19,7 @@ def load_balance():
 
 		coeff=coeff1*coeff2*coeff3
 
-		loads.append((coeff,data["server_load"][i]["ip"],data["server_load"][i]["port"]))
+		loads.append((coeff,data["server_load"][i]["ip"],data["server_load"][i]["port"],data["server_load"][i]["username"],data["server_load"][i]["password"]))
 
 	if(len(loads)==0):
 		return "NO_MACHINE","","","",""
@@ -27,7 +27,7 @@ def load_balance():
 		print(loads)
 		loads.sort(key = lambda x:x[0],reverse=True)
 		print(loads)
-		return "",loads[0][1],loads[0][2],"",""
+		return "MACHINE_AVAILABLE",loads[0][1],loads[0][3],loads[0][4],loads[0][2]
 
 def setup_new_machine(ip,username,password):
 	ssh_client =paramiko.SSHClient()
