@@ -10,7 +10,7 @@ Jay Krishna - 2019201019
 Server Life Cycle Manager module is responsible for allocating server on which service life cycle manager can run an algorithm. 
 * Server life cycle manager allocates server instance in such a way that computational load among all the avilable servers remains evenly distributed.
 * It also decides whether to bring more server instances if all the serves are under more than threshold load.
-
+* For new server instances the server life cycle manager is responsible to install docker and run machine agent code on the instance.
 ### Data Flow
 1. Service life cycle manager will request for a server instance details on it's REST API.
 2. Server life cycle manger will hit the REST API of monitoring module & will receive current statistics of all the servers.
@@ -29,4 +29,14 @@ Coefficient 3 = 0 if CPU temperature greater than critical temperature else 1
 Load Factor = (Coefficient 1) * (Coefficient 2) * (Coefficient 3)
 ```
 6. If no server is available then it will request deatils for free available server & setup evironment along with run machine agent code.
-7. Finally it will return server details to service life cycle manager.
+7. Finally it will return server details to service life cycle manager in json format as shown below
+```json
+{
+	"result":"RESPONSE RESULT",
+	"ip":"127.0.0.1",
+	"username":"root",
+	"password":"******",
+	"port":22
+}
+
+```

@@ -122,13 +122,6 @@ class Scheduler:
             result = "ERROR : wrong scheduling format"
         return result,service_instance_id
 
-    
-    
-
-    
-sch = Scheduler()
-sch.run()
-
 
 
 def Make_Data(username,application_id,service_name,start_time,end_time,singleinstance=False,day=None,period=None):
@@ -172,6 +165,9 @@ def Converter(data):
 	print(len(return_data))
 
 	return return_data
+   
+sch = Scheduler()
+sch.run()
 
 @app.route('/schedule_service', methods=['GET', 'POST'])
 def schedule_service():
@@ -184,7 +180,7 @@ def schedule_service():
     		res="ERROR : wrong scheduling format"
     return {"result":res}
 
-if __name__ == "__main__":        # on running python app.py
+if __name__ == "__main__":        
 	app.run(debug=True,port=9090) 
 
 
