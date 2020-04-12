@@ -1,11 +1,9 @@
-"application_name":{
+"Application":{
+  "username": "useruniqueid",
+  "application_id": "application_id",
   
-  "service-1":{
-      
-      "username": "useruniqueid",
-      
-      "application_id": "application_id",
-      
+  "service-1":{ 
+
       "service_name": "service_name",
       
       "singleinstance":"True",
@@ -64,10 +62,6 @@
   ,
   "service-2":{
       
-      "username": "useruniqueid",
-      
-      "application_id": "application_id",
-      
       "service_name": "service_name",
       
       "singleinstance":"True",
@@ -124,10 +118,6 @@
       }
   }
   ,"service-3":{
-      
-      "username": "useruniqueid",
-      
-      "application_id": "application_id",
       
       "service_name": "service_name",
       
