@@ -3,7 +3,7 @@ import requests
 import paramiko
 app = Flask(__name__)
 
-
+testing_new_machine  = True
 
 def load_balance():
 	res=requests.get('http://localhost:5050/monitoring/get_load')
@@ -29,20 +29,21 @@ def load_balance():
 		print(loads)
 		return "MACHINE_AVAILABLE",loads[0][1],loads[0][3],loads[0][4],loads[0][2]
 
-def setup_new_machine(ip,username,password):
+def setup_new_machine(ip,username,password,port):
+	print("setup_new_machine")
 	ssh_client =paramiko.SSHClient()
 	ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 	ssh_client.connect(hostname=ip,username=username,password=password)
 	ftp_client=ssh_client.open_sftp()
 	ftp_client.put("code/machineagent.py","machineagent.py");
 	ftp_client.close()
-	ssh_client.exec_command("python3 machineagent.py")
+	ssh_client.exec_command("python3 machineagent.py "+str(ip)+" "+port+" "+username+" "+password)
 	ssh_client.close()
 def allocate_new_machine():
 	result,ip,username,password="","","",""
 	res = requests.get('http://localhost:6060/service_registry/get_free_list')
 	free_list = (res.json())["free"]
-	if(len(free_list)==0):
+	if( len(free_list)==0):
 		result = "NO_MACHINE"
 	else:
 		result = "OK"
@@ -50,14 +51,16 @@ def allocate_new_machine():
 		username = free_list[0].split(":")[1]
 		password = free_list[0].split(":")[2]
 		port = free_list[0].split(":")[3]
-		requests.get('http://localhost:6060/service_registry/remove_ip_from_freelist/'+ip+"/"+username+"/"+password+"/"+port)
-		setup_new_machine(ip,username,password)
+		setup_new_machine(ip,username,password,port)
 	return result,ip,username,password,port
 
 @app.route("/server_lcm/allocate_server")
 def allocate_server():
+	global testing_new_machine
 	result,ip,username,password,port = load_balance()
-	if(result=="NO_MACHINE"):
+	print(testing_new_machine)
+	if(testing_new_machine or result=="NO_MACHINE"):
+		print("allocate new machine")
 		result,ip,username,password,port = allocate_new_machine()
 	return {"result":result,"ip":ip,"username":username,"password":password,"port":port}
 

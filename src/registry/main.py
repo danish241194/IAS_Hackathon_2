@@ -7,6 +7,8 @@ service_registry = {"monitoring":"localhost:5050"};
 
 @app.route("/service_registry/get_free_list")
 def get_free_list():
+    if len(free_list)==0:
+        return {"free":"NO_MACHINE"}
     item=[free_list[0]]
     print("item is")
     print(item)
@@ -20,10 +22,6 @@ def get_service_location(service):
 def remove_kernel(ip,username,password,port):
 	free_list.remove(str(ip)+":"+str(username)+":"+str(password)+":"+str(port));
 
-@app.route("/service_registry/remove_ip_from_freelist/<ip>/<username>/<password>/<port>")
-def remove_ip_from_freelist(ip,username,password,port):
-    remove_kernel(ip,username,password,port)
-    return "OK"
 
 
 if __name__ == "__main__":        # on running python app.py
