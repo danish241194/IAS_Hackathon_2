@@ -8,6 +8,7 @@ import random
 import json
 import requests
 import argparse
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -15,19 +16,34 @@ service_life_cycle_ip = None
 service_life_cycle_port = None
 Myport = None
 
+def time_add(time,minutes_to_add) :
+     hr = int(str(time).split(":")[0])
+     mn = int(str(time).split(":")[1])
+     mn = (mn+minutes_to_add)
+     hr = (hr + int(mn/60))%24
+     mn=mn%60
+     hr = str(hr)
+     mn = str(mn)
+     if(len(hr)==1):
+         hr="0"+hr
+     if(len(mn)==1):
+         mn="0"+mn
+     return hr+":"+mn
+
 
 class Scheduler:
     def __init__(self):   
         self.job_dict = {}
         self.main_service_id_dict={}
+        self.single_instances ={} #
+        self.started = {} #done
+        self.loop_schedules=[] #done
+
     def pending_jobs(self):
-        minutes=0
         while True: 
             schedule.run_pending() 
             time.sleep(10)
-            minutes+=1
-            if minutes%6==0:
-                print("+ Started ",minutes/6," minutes ago")
+
     def send_request_to_service_life_cyle(self,username,application_id,service_name,service_instance_id,type_):
         response = {"userId":username,"applicationName":application_id,"servicName":service_name,"serviceId":self.main_service_id_dict[service_instance_id]}
         # if type_=="start":
@@ -40,32 +56,65 @@ class Scheduler:
         t1.start() 
     def exit_service(self,service_instance_id):
         service_instance_id,username,application_id,service_name = service_instance_id[0],service_instance_id[1],service_instance_id[2],service_instance_id[3]
-        print("send request to service life cycle manager to stop service",service_instance_id)
+        print("+MSG TO SLCM TO STOP \t\t",service_instance_id)
         #send request to service life cycle manager to cancel service 
         self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"stop")
+        del self.started[service_instance_id]
         schedule.cancel_job(self.job_dict[service_instance_id])
-        
+        # del self.job_dict[service_instance_id]
     def run_service(self,service_detail):
         username,application_id,service_name,end,service_instance_id = service_detail[0],service_detail[1],service_detail[2],service_detail[3],service_detail[4]
-        print("send request to service life cycle manager to start service ",service_instance_id)
+        print("+MSG TO SLCM TO START \t\t",service_instance_id)
         #send request to service life cycle manager to start service
         self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
+        data = {
+               "service_id": service_instance_id,
+               "username":username,
+               "application_id":application_id,
+               "service_name":service_name,
+               "end":end
+        }
+        self.started[service_instance_id]=data
         job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         self.job_dict[service_instance_id]=job_id
         
     def run_service_period(self,service_detail):
         username,application_id,service_name,end,service_instance_id = service_detail[0],service_detail[1],service_detail[2],service_detail[3],service_detail[4]
-        print("send request to service life cycle manager to start service ",service_instance_id)
+        print("+MSG TO SLCM TO START \t\t",service_instance_id)
         #send request to service life cycle manager to start service
         self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
-        job_id = schedule.every(end).minutes.do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
+
+        now = datetime.now()
+        current_time = now.strftime("%H:%M")
+        end_time = time_add(current_time,int(end))
+
+        data = {
+               "service_id": service_instance_id,
+               "username":username,
+               "application_id":application_id,
+               "service_name":service_name,
+               "end":end_time
+        }
+        self.started[service_instance_id]=data
+
+        job_id = schedule.every().day.at(end_time).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         self.job_dict[service_instance_id]=job_id
         
     def run_service_once(self,service_detail):
         username,application_id,service_name,end,service_instance_id = service_detail[0],service_detail[1],service_detail[2],service_detail[3],service_detail[4]
-        print("send request to service life cycle manager to start service ",service_instance_id)
+        print("+MSG TO SLCM TO START \t\t",service_instance_id)
         #send request to service life cycle manager to start service
         self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
+        data = {
+               "service_id": service_instance_id,
+               "username":username,
+               "application_id":application_id,
+               "service_name":service_name,
+               "end":end
+        }
+        self.started[service_instance_id]=data
+        if(service_instance_id in self.single_instances.keys()):
+            del self.single_instances[service_instance_id] 
         job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         try:
             if(self.job_dict[service_instance_id]):
@@ -74,6 +123,13 @@ class Scheduler:
         except:
             pass
         self.job_dict[service_instance_id]=job_id
+    def stop_all_started_at_their_end_time(self):
+        for key in self.started.keys():
+            service_instance_id,username,application_id,service_name,end = self.started[key]["service_id"],self.started[key]["username"],self.started[key]["application_id"],self.started[key]["service_name"],self.started[key]["end"]
+            job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
+            self.job_dict[service_instance_id]=job_id
+            del self.started[service_instance_id]
+
     def schedule(self,request_):
         username = request_["username"]
         application_id = request_["application_id"]
@@ -90,9 +146,10 @@ class Scheduler:
         
         if(str(single_instance)=="True"):
             print("single instance ",bool(single_instance))
-            if(start_time=="NOW"):
+            if(start_time=="NOW" and day is None):
                 self.run_service_once((username,application_id,service_name,end,service_instance_id))
-            elif day is not None:
+            elif day is not None and start_time!="NOW":
+                self.single_instances[service_instance_id]=request_
                 job_id = None
                 if(day=="monday"):
                     job_id = schedule.every().monday.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
@@ -110,15 +167,18 @@ class Scheduler:
                     job_id = schedule.every().sunday.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
                 self.job_dict[service_instance_id]=job_id
             else:
+                self.single_instances[service_instance_id]=request_
                 job_id = schedule.every().day.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
                 self.job_dict[service_instance_id]=job_id
         elif day is None and period is not None:
-            
+            self.loop_schedules.append(request_)
             interval = period["interval"]
             end = period["length"]
+        
             job_id = schedule.every(interval).minutes.do( self.run_service_period,((username,application_id,service_name,end,service_instance_id)))
             self.job_dict[service_instance_id]=job_id
         elif day is not None:
+                self.loop_schedules.append(request_)
                 if(day=="monday"):
                     job_id = schedule.every().monday.at(start_time).do( self.run_service,((username,application_id,service_name,end,service_instance_id)))
                 elif(day=="tuesday"):
@@ -219,8 +279,6 @@ def Convert(data):
 
     return return_data
    
-sch = Scheduler()
-sch.run()
 
 @app.route('/schedule_service', methods=['GET', 'POST'])
 def schedule_service():
@@ -228,12 +286,40 @@ def schedule_service():
     extracted_requests = Convert(content)
     res = "OK"
     for scheduling_request in extracted_requests:
-        print(scheduling_request)
+        print("+ RECEIVED REQUEST")
+        print("\t\t ",scheduling_request,"\n")
         result,service_id = sch.schedule(scheduling_request)
         if(result!="OK"):
             res="ERROR : wrong scheduling format"
     return {"result":res}
-
+sch = None
+def dumping_thread():
+    global sch
+    minutes=0
+    while True: 
+        time.sleep(10)
+        minutes+=1
+        if minutes%3==0:
+            print("+ Started ",minutes/6," minutes ago")
+        if(minutes%3==0):
+            print("+ DUMPING DETAILS")
+            print("\t- Single Instance Schedules")
+            print("\n\t\t",sch.single_instances)
+            print("\t- Started")
+            print("\n\t\t",sch.started)
+            print("\t- Schedules")
+            print("\n\t\t",sch.loop_schedules)
+            print("\n")
+            print("+ DUMPING DETAILS END")
+        '''
+            data = {"single_instance":sch.single_instances
+                    "started":sch.started,
+                    "schedules":sch.loop_schedules
+                    "main_service_id_dict":self.main_service_id_dict
+                    }
+            send data to logging
+        '''
+            
 if __name__ == "__main__": 
     ap = argparse.ArgumentParser()
     ap.add_argument("-p","--port",required=True)
@@ -243,7 +329,27 @@ if __name__ == "__main__":
     service_life_cycle_ip = args["service_life_cycle_ip"]
     service_life_cycle_port = int(args["service_life_cycle_port"])
     Myport = args["port"]
-    app.run(debug=True,port=int(Myport)) 
+    sch = Scheduler()
+    sch.run()
+    '''
+        retrieve data from logging service
+        sch.started = data["started"]    #dictionary
+        sch.loop_schedules = data["schedules"] #list
+        sch.single_instances = data["single_instance"] #dictionary
+        sch.main_service_id_dict = data["main_service_id_dict"] #dictionary
+        sch.stop_all_started_at_their_end_time()
+
+        for key in sch.singleinstances.keys():
+            sch.schedule(sch.single_instances[key])
+        for request in sch.loop_schedules:
+            sch.schedule(request) 
+         #it covers both single instance and non single instances 
+    '''
+
+
+    t2 = threading.Thread(target=dumping_thread) 
+    t2.start()
+    app.run(debug=False,port=int(Myport)) 
 
 
 

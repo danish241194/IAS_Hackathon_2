@@ -5,12 +5,11 @@ data = {
         "username":"useruniqueid",
         "application_id":"application_id",
         "services":{
-         "service-4":{
+         
+          "service-5":{
                 "service_name":"service_name",
                 "filename":"hello4.py",
-                "singleinstance":True,
-                "dependency":["service-5"
-                ],
+                "singleinstance":False,
                 "environment":{
                     "python3":True,
                     "tomcat":True,
@@ -20,68 +19,21 @@ data = {
                     "python-kafka":True,
                     "flask":True
                 },
-                "days":["tuesday"],
                 "time":{
                     "start":[
-                        "18:05",
+                        "NOW",
                         
                     ],
                     "end":[
-                        "18:06"
+                        "20:55"
                     ]
                 },
-                "period":"None",
-                "sensor":{
-                    "sensor1":{
-                        "sensor_name":"Fan",
-                        "sensor_address":{
-                            "area":"A",
-                            "building":"B",
-                            "room_no":"C"
-                        },
-                        "processing":{
-                            "data_rate":5
-                        }
-                    },
-                    "sensor2":{
-                        "sensor_name":"Lamp",
-                        "sensor_address":{
-                            "area":"A",
-                            "building":"C",
-                            "room_no":"D"
-                        },
-                        "processing":{
-                            "data_rate":1
-                        }
-                    }
-                }
-            },
-            "service-5":{
-                "service_name":"service-5",
-                "filename":"hello4.py",
-                "singleinstance":True,
-                "dependency":[
-                ],
-                "environment":{
-                    "python3":True,
-                    "tomcat":True,
-                    "java":True,
-                    "c++":False,
-                    "nginx":False,
-                    "python-kafka":True,
-                    "flask":True
-                },
-                "days":["wednesday"],
-                "time":{
-                    "start":[
-                        "17:45",
-                        
-                    ],
-                    "end":[
-                        "17:47"
-                    ]
-                },
-                "period":"None",
+                "period":{
+                    "interval":3,
+                    "length":2
+                },           
+                "dependency":[],
+
                 "sensor":{
                     "sensor1":{
                         "sensor_name":"Fan",
