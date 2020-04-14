@@ -1,20 +1,117 @@
-
+import sys
 import requests
 data = {
-  "username": "useruniqueid",
-  "application_id": "application_id",
-  "service_name": "service_name",
-  "singleinstance":True,
-  "time": {
-    "start": [
-      "NOW",
-    ],
-    "end": [
-      "01:31",
-    ]
-  }
+"Application":{
+        "username":"useruniqueid",
+        "application_id":"application_id",
+        "services":{
+         "service-4":{
+                "service_name":"service_name",
+                "filename":"hello4.py",
+                "singleinstance":True,
+                "dependency":["service-5"
+                ],
+                "environment":{
+                    "python3":True,
+                    "tomcat":True,
+                    "java":True,
+                    "c++":False,
+                    "nginx":False,
+                    "python-kafka":True,
+                    "flask":True
+                },
+                "days":["tuesday"],
+                "time":{
+                    "start":[
+                        "18:05",
+                        
+                    ],
+                    "end":[
+                        "18:06"
+                    ]
+                },
+                "period":"None",
+                "sensor":{
+                    "sensor1":{
+                        "sensor_name":"Fan",
+                        "sensor_address":{
+                            "area":"A",
+                            "building":"B",
+                            "room_no":"C"
+                        },
+                        "processing":{
+                            "data_rate":5
+                        }
+                    },
+                    "sensor2":{
+                        "sensor_name":"Lamp",
+                        "sensor_address":{
+                            "area":"A",
+                            "building":"C",
+                            "room_no":"D"
+                        },
+                        "processing":{
+                            "data_rate":1
+                        }
+                    }
+                }
+            },
+            "service-5":{
+                "service_name":"service-5",
+                "filename":"hello4.py",
+                "singleinstance":True,
+                "dependency":[
+                ],
+                "environment":{
+                    "python3":True,
+                    "tomcat":True,
+                    "java":True,
+                    "c++":False,
+                    "nginx":False,
+                    "python-kafka":True,
+                    "flask":True
+                },
+                "days":["wednesday"],
+                "time":{
+                    "start":[
+                        "17:45",
+                        
+                    ],
+                    "end":[
+                        "17:47"
+                    ]
+                },
+                "period":"None",
+                "sensor":{
+                    "sensor1":{
+                        "sensor_name":"Fan",
+                        "sensor_address":{
+                            "area":"A",
+                            "building":"B",
+                            "room_no":"C"
+                        },
+                        "processing":{
+                            "data_rate":5
+                        }
+                    },
+                    "sensor2":{
+                        "sensor_name":"Lamp",
+                        "sensor_address":{
+                            "area":"A",
+                            "building":"C",
+                            "room_no":"D"
+                        },
+                        "processing":{
+                            "data_rate":1
+                        }
+                    }
+                }
+            }
+          }
+        }
 }
 
-res = requests.post('http://localhost:9090/schedule_service', json=data)
+print(sys.argv[1])
+res = requests.post('http://localhost:'+str(sys.argv[1])+'/schedule_service', json=data)
 
 print(res.json())

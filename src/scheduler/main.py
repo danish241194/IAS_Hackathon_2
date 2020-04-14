@@ -7,25 +7,34 @@ from flask import Flask,request,jsonify
 import random
 import json
 import requests
+import argparse
+
 app = Flask(__name__)
 
-
-service_life_cycle_port = 8080
-
+service_life_cycle_ip = None
+service_life_cycle_port = None
+Myport = None
 
 
 class Scheduler:
     def __init__(self):   
         self.job_dict = {}
+        self.main_service_id_dict={}
     def pending_jobs(self):
+        minutes=0
         while True: 
             schedule.run_pending() 
             time.sleep(10)
-            print("running")
+            minutes+=1
+            if minutes%6==0:
+                print("+ Started ",minutes/6," minutes ago")
     def send_request_to_service_life_cyle(self,username,application_id,service_name,service_instance_id,type_):
-    	response = {"username":username,"application_id":application_id,"service_name":service_name,"service_id":service_instance_id,"type":type_}
-    	res = requests.post('http://localhost:'+str(service_life_cycle_port)+'/start_stop_service', json=response)
-    
+        response = {"userId":username,"applicationName":application_id,"servicName":service_name,"serviceId":self.main_service_id_dict[service_instance_id]}
+        # if type_=="start":
+        #     res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/start', json=response)
+        # else:
+        #     res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json=response)
+        
     def run(self):
         t1 = threading.Thread(target=self.pending_jobs) 
         t1.start() 
@@ -49,7 +58,7 @@ class Scheduler:
         print("send request to service life cycle manager to start service ",service_instance_id)
         #send request to service life cycle manager to start service
         self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
-        job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
+        job_id = schedule.every(end).minutes.do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         self.job_dict[service_instance_id]=job_id
         
     def run_service_once(self,service_detail):
@@ -74,10 +83,13 @@ class Scheduler:
         start_time = request_["start_time"]
         end = request_["end_time"]
         period = request_["period"]
-        service_instance_id=username+application_id+service_name+str(randrange(10000))
+        service_instance_id=username+"_"+application_id+"_"+service_name+"_"+str(randrange(10000))
+        main_service_id = username+"_"+application_id+"_"+service_name
+        self.main_service_id_dict[service_instance_id]=main_service_id
         result = "OK"
         
-        if(single_instance):
+        if(str(single_instance)=="True"):
+            print("single instance ",bool(single_instance))
             if(start_time=="NOW"):
                 self.run_service_once((username,application_id,service_name,end,service_instance_id))
             elif day is not None:
@@ -101,7 +113,10 @@ class Scheduler:
                 job_id = schedule.every().day.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
                 self.job_dict[service_instance_id]=job_id
         elif day is None and period is not None:
-            schedule.every(period).days.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
+            
+            interval = period["interval"]
+            end = period["length"]
+            job_id = schedule.every(interval).minutes.do( self.run_service_period,((username,application_id,service_name,end,service_instance_id)))
             self.job_dict[service_instance_id]=job_id
         elif day is not None:
                 if(day=="monday"):
@@ -123,48 +138,86 @@ class Scheduler:
         return result,service_instance_id
 
 
+import json
 
-def Make_Data(username,application_id,service_name,start_time,end_time,singleinstance=False,day=None,period=None):
-	data_dict={"username":username,"application_id":application_id,"service_name":service_name,"singleinstance":singleinstance,"day":day,"start_time":start_time,"end_time":end_time,"period":period}
+def GetDict(services):
+    d={}
 
-	return data_dict
+    for _ in services:
+        d[_]=False
 
+    return d
 
-def Converter(data):
-	return_data=[]
+def Make_Data(username,application_id,service_name,start_time=None,end_time=None,singleinstance=False,day=None,period=None):
+    data_dict={"username":username,"application_id":application_id,"service_name":service_name,"singleinstance":singleinstance,"day":day,"start_time":start_time,"end_time":end_time,"period":period}
 
-	username=data["username"]
-	application_id=data["application_id"]
-	service_name=data["service_name"]
+    return data_dict
 
-	times=[]
-	days=[]
-	flags=[True,True]
+def Convert(data):
+    return_data=[]
 
-	if "time" in data.keys():
-		times=[(s,e) for s,e in zip(data["time"]["start"],data["time"]["end"])]
-	else:
-		times.append((None,None))
-		flags[0]=False
+    username=data["Application"]["username"]
+    application_id=data["Application"]["application_id"]
+    services=list(data["Application"]["services"].keys())
+    # print(services)
+    
+    for service in services:
+        # if(service!="service-1"):
+        #   continue
+        bool_dict=GetDict(services)
+        bool_dict[service]=True
 
-	if "days" in data.keys():
-		days=[_ for _ in data["days"]]
-	else:
-		days.append(None)
-		flags[1]=False
-		
+        order_dependency=[]
+        stack=[]
+        stack.append(service)
 
-	if(data["singleinstance"]) or flags[1]:
-		for day in days:
-			for time in times:
-				return_data.append(Make_Data(username=username,application_id=application_id,service_name=service_name,singleinstance=data["singleinstance"],start_time=time[0],end_time=time[1],day=day))
-	else:
-		for time in times:
-			return_data.append(Make_Data(username=username,application_id=application_id,service_name=service_name,singleinstance=data["singleinstance"],start_time=time[0],end_time=time[1],period=data["period"]))
+        while(len(stack) > 0):
+            # print(order_dependency)
+            temp=stack.pop()
+            if(temp!=service):
+                order_dependency.append(temp)
 
-	print(len(return_data))
+            curr_dep=data["Application"]["services"][temp]["dependency"]
+            for _ in curr_dep:
+                if(not bool_dict[_]):
+                    stack.append(_)
+                    bool_dict[_]=True
 
-	return return_data
+        order_dependency=order_dependency[::-1]
+        order_dependency.append(service)
+        print(order_dependency)
+
+        if(data["Application"]["services"][service]["period"]!="None"):
+            for service_dep in order_dependency:
+                return_data.append(Make_Data(username=username,application_id=application_id,service_name=service_dep,singleinstance="False",period=data["Application"]["services"][service]["period"]))
+        else:
+            times=[]
+            days=[]
+            flags=[True,True]
+
+            if "time" in data["Application"]["services"][service].keys():
+                times=[(s,e) for s,e in zip(data["Application"]["services"][service]["time"]["start"],data["Application"]["services"][service]["time"]["end"])]
+            else:
+                times.append((None,None))
+                flags[0]=False
+
+            if "days" in data["Application"]["services"][service].keys():
+                days=[_ for _ in data["Application"]["services"][service]["days"]]
+            else:
+                days.append(None)
+                flags[1]=False
+                
+            if(data["Application"]["services"][service]["singleinstance"]) or flags[1]:
+                for service_dep in order_dependency:
+                    for day in days:
+                        for time in times:
+                            return_data.append(Make_Data(username=username,application_id=application_id,service_name=service_dep,singleinstance=data["Application"]["services"][service]["singleinstance"],start_time=time[0],end_time=time[1],day=day))
+            else:
+                for service_dep in order_dependency:
+                    for time in times:
+                        return_data.append(Make_Data(username=username,application_id=application_id,service_name=service_dep,singleinstance=data["Application"]["services"][service]["singleinstance"],start_time=time[0],end_time=time[1]))
+
+    return return_data
    
 sch = Scheduler()
 sch.run()
@@ -172,16 +225,25 @@ sch.run()
 @app.route('/schedule_service', methods=['GET', 'POST'])
 def schedule_service():
     content = request.json
-    extracted_requests = Converter(content)
+    extracted_requests = Convert(content)
     res = "OK"
     for scheduling_request in extracted_requests:
-    	result,service_id = sch.schedule(scheduling_request)
-    	if(result!="OK"):
-    		res="ERROR : wrong scheduling format"
+        print(scheduling_request)
+        result,service_id = sch.schedule(scheduling_request)
+        if(result!="OK"):
+            res="ERROR : wrong scheduling format"
     return {"result":res}
 
-if __name__ == "__main__":        
-	app.run(debug=True,port=9090) 
+if __name__ == "__main__": 
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-p","--port",required=True)
+    ap.add_argument("-i","--service_life_cycle_ip",required=True)
+    ap.add_argument("-x","--service_life_cycle_port",required=True)
+    args = vars(ap.parse_args())          
+    service_life_cycle_ip = args["service_life_cycle_ip"]
+    service_life_cycle_port = int(args["service_life_cycle_port"])
+    Myport = args["port"]
+    app.run(debug=True,port=int(Myport)) 
 
 
 
