@@ -1,5 +1,7 @@
-from flask import Flask,request
+from flask import Flask,request,Response
 import requests
+import json
+import threading
 import paramiko
 app = Flask(__name__)
 
@@ -22,12 +24,12 @@ def load_balance():
 		loads.append((coeff,data["server_load"][i]["ip"],data["server_load"][i]["port"],data["server_load"][i]["username"],data["server_load"][i]["password"]))
 
 	if(len(loads)==0):
-		return "NO_MACHINE","","","",""
+		return "NO MACHINE","","","",""
 	else:
-		print(loads)
+		# print(loads)
 		loads.sort(key = lambda x:x[0],reverse=True)
-		print(loads)
-		return "MACHINE_AVAILABLE",loads[0][1],loads[0][3],loads[0][4],loads[0][2]
+		# print(loads)
+		return "OK",loads[0][1],loads[0][3],loads[0][4],loads[0][2]
 
 def setup_new_machine(ip,username,password,port):
 	print("setup_new_machine")
@@ -44,7 +46,7 @@ def allocate_new_machine():
 	res = requests.get('http://localhost:6060/service_registry/get_free_list')
 	free_list = (res.json())["free"]
 	if( len(free_list)==0):
-		result = "NO_MACHINE"
+		result = "NO MACHINE"
 	else:
 		result = "OK"
 		ip = free_list[0].split(":")[0]
@@ -54,15 +56,29 @@ def allocate_new_machine():
 		setup_new_machine(ip,username,password,port)
 	return result,ip,username,password,port
 
-@app.route("/server_lcm/allocate_server/<serviceid>")
-def allocate_server():
+
+def allocate_server_kernel(serviceid):
 	global testing_new_machine
 	result,ip,username,password,port = load_balance()
-	print(testing_new_machine)
-	if(testing_new_machine or result=="NO_MACHINE"):
+	# print("Result: {}".format(result))
+	if(testing_new_machine or result=="NO MACHINE"):
 		print("allocate new machine")
 		result,ip,username,password,port = allocate_new_machine()
-	return {"result":result,"ip":ip,"username":username,"password":password,"port":port}
+
+	data={"result":result,"serviceid": serviceid,"serverip":ip,"machineusername":username,"password":password,"sshPort":port}
+
+	r=requests.post(url="http://127.0.0.1:8080/servicelcm/service/update",json=data)
+	print(r.json())
+
+
+@app.route("/serverlcm/allocate_server/<serviceid>")
+def allocate_server(serviceid):
+	_=threading.Thread(target=allocate_server_kernel,args=(serviceid,))
+	_.start()
+
+	data={"status":"ok"}
+	resp = Response(json.dumps(data), status=200, mimetype='application/json')
+	return resp
 
 if __name__ == "__main__":        # on running python app.py
     app.run(debug=True,port=7070) 
