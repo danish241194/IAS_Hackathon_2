@@ -6,8 +6,11 @@ import paramiko
 app = Flask(__name__)
 
 testing_new_machine  = False
+lock_load = threading.Lock()
+lock_allocate = threading.Lock()
 
 def load_balance():
+	lock_load.acquire()
 	res=requests.get('http://localhost:5050/monitoring/get_load')
 	data=res.json()
 	loads=[]
@@ -24,11 +27,13 @@ def load_balance():
 		loads.append((coeff,data["server_load"][i]["ip"],data["server_load"][i]["port"],data["server_load"][i]["username"],data["server_load"][i]["password"]))
 
 	if(len(loads)==0):
+		lock_load.release()
 		return "NO MACHINE","","","",""
 	else:
 		# print(loads)
 		loads.sort(key = lambda x:x[0],reverse=True)
 		# print(loads)
+		lock_load.release()
 		return "OK",loads[0][1],loads[0][3],loads[0][4],loads[0][2]
 
 def setup_new_machine(ip,username,password,port):
@@ -42,6 +47,7 @@ def setup_new_machine(ip,username,password,port):
 	ssh_client.exec_command("python3 machineagent.py "+str(ip)+" "+port+" "+username+" "+password)
 	ssh_client.close()
 def allocate_new_machine():
+	lock_allocate.acquire()
 	result,ip,username,password="","","",""
 	res = requests.get('http://localhost:6060/service_registry/get_free_list')
 	free_list = (res.json())["free"]
@@ -54,6 +60,8 @@ def allocate_new_machine():
 		password = free_list[0].split(":")[2]
 		port = free_list[0].split(":")[3]
 		setup_new_machine(ip,username,password,port)
+
+	lock_allocate.release()
 	return result,ip,username,password,port
 
 # @app.route("/server_lcm/allocate_server")
