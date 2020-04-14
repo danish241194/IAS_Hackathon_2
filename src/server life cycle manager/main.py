@@ -3,7 +3,7 @@ import requests
 import paramiko
 app = Flask(__name__)
 
-testing_new_machine  = True
+testing_new_machine  = False
 
 def load_balance():
 	res=requests.get('http://localhost:5050/monitoring/get_load')
@@ -54,7 +54,7 @@ def allocate_new_machine():
 		setup_new_machine(ip,username,password,port)
 	return result,ip,username,password,port
 
-@app.route("/server_lcm/allocate_server")
+@app.route("/server_lcm/allocate_server/<serviceid>")
 def allocate_server():
 	global testing_new_machine
 	result,ip,username,password,port = load_balance()
