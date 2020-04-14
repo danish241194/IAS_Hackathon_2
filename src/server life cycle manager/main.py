@@ -64,15 +64,6 @@ def allocate_new_machine():
 	lock_allocate.release()
 	return result,ip,username,password,port
 
-# @app.route("/server_lcm/allocate_server")
-# def allocate_server():
-# 	global testing_new_machine
-# 	result,ip,username,password,port = load_balance()
-# 	print(testing_new_machine)
-# 	if(testing_new_machine or result=="NO_MACHINE"):
-# 		print("allocate new machine")
-# 		result,ip,username,password,port = allocate_new_machine()
-# 	return {"result":result,"ip":ip,"username":username,"password":password,"port":port}
 
 def allocate_server_kernel(serviceid):
 	global testing_new_machine
