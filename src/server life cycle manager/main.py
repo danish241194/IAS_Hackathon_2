@@ -3,11 +3,17 @@ import requests
 import json
 import threading
 import paramiko
+import argparse
 app = Flask(__name__)
 
-testing_new_machine  = False
+testing_new_machine  = True
 lock_load = threading.Lock()
 lock_allocate = threading.Lock()
+
+service_life_cycle_ip = None
+service_life_cycle_port = None
+monitoring_ip = None
+monitoring_port = None
 
 def load_balance():
 	lock_load.acquire()
@@ -50,18 +56,24 @@ def setup_new_machine(ip,username,password,port):
 def allocate_new_machine():
 	lock_allocate.acquire()
 	result,ip,username,password="","","",""
-	res = requests.get('http://localhost:6060/service_registry/get_free_list')
-	free_list = (res.json())["free"]
+	file=open("freelist.json")
+	free_list=json.load(file)
 	if( len(free_list)==0):
 		result = "NO MACHINE"
 	else:
 		result = "OK"
-		ip = free_list[0].split(":")[0]
-		username = free_list[0].split(":")[1]
-		password = free_list[0].split(":")[2]
-		port = free_list[0].split(":")[3]
+		ip = free_list["Servers"][0]["ip"]
+		username = free_list["Servers"][0]["username"]
+		password = free_list["Servers"][0]["password"]
+		port = free_list["Servers"][0]["port"]
 		setup_new_machine(ip,username,password,port)
-
+		del free_list["Servers"][0]
+		file.close()
+		file=open("freelist.json","w")
+		# file.write(json.dumps(free_list))
+		# print(free_list)
+		json.dump(free_list,file)
+		file.close()
 	lock_allocate.release()
 	return result,ip,username,password,port
 
@@ -89,4 +101,14 @@ def allocate_server(serviceid):
 	return resp
 
 if __name__ == "__main__":        # on running python app.py
+	# ap = argparse.ArgumentParser()
+ #    ap.add_argument("-a","--service_life_cycle_ip",required=True)
+ #    ap.add_argument("-b","--service_life_cycle_port",required=True)
+ #    ap.add_argument("-c","--monitoring_ip",required=True)
+ #    ap.add_argument("-d","--monitoring_port",required=True)
+ #    args = vars(ap.parse_args())          
+ #    service_life_cycle_ip = args["service_life_cycle_ip"]
+ #    service_life_cycle_port = int(args["service_life_cycle_port"])
+ #    monitoring_ip = args["monitoring_ip"]
+ #    monitoring_port = int(args["monitoring_port"])
     app.run(debug=True,port=7070) 
