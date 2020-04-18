@@ -17,7 +17,7 @@ monitoring_port = None
 
 def load_balance():
 	lock_load.acquire()
-	res=requests.get('http://'+monitoring_ip+':'+monitoring_port+'/monitoring/get_load')
+	res=requests.get('http://'+monitoring_ip+':'+str(monitoring_port)+'/monitoring/getLoad')
 	data=res.json()
 	loads=[]
 
@@ -48,7 +48,7 @@ def setup_new_machine(ip,username,password,port):
 	ftp_client=ssh_client.open_sftp()
 	ftp_client.put("code/ma.py","ma.py");
 	ftp_client.close()
-	ssh_client.exec_command("python3 ma.py "+str(ip)+" "+port+" "+username+" "+password)
+	ssh_client.exec_command("python3 ma.py "+str(ip)+" "+str(port)+" "+username+" "+password)
 	ssh_client.close()
 	
 def allocate_new_machine():
@@ -85,7 +85,7 @@ def allocate_server_kernel(serviceid):
 
 	data={"result":result,"serviceid": serviceid,"serverip":ip,"machineusername":username,"password":password,"sshPort":port}
 
-	r=requests.post(url="http://"+service_life_cycle_ip+":"+service_life_cycle_port+"/servicelcm/service/update",json=data)
+	r=requests.post(url="http://"+service_life_cycle_ip+":"+str(service_life_cycle_port)+"/servicelcm/service/update",json=data)
 	print(r.json())
 
 
@@ -100,13 +100,13 @@ def allocate_server(serviceid):
 
 if __name__ == "__main__":        # on running python app.py
 	ap = argparse.ArgumentParser()
-    ap.add_argument("-a","--service_life_cycle_ip",required=True)
-    ap.add_argument("-b","--service_life_cycle_port",required=True)
-    ap.add_argument("-c","--monitoring_ip",required=True)
-    ap.add_argument("-d","--monitoring_port",required=True)
-    args = vars(ap.parse_args())          
-    service_life_cycle_ip = args["service_life_cycle_ip"]
-    service_life_cycle_port = int(args["service_life_cycle_port"])
-    monitoring_ip = args["monitoring_ip"]
-    monitoring_port = int(args["monitoring_port"])
-    app.run(debug=True,port=7070) 
+	ap.add_argument("-a","--service_life_cycle_ip",required=True)
+	ap.add_argument("-b","--service_life_cycle_port",required=True)
+	ap.add_argument("-c","--monitoring_ip",required=True)
+	ap.add_argument("-d","--monitoring_port",required=True)
+	args = vars(ap.parse_args())          
+	service_life_cycle_ip = args["service_life_cycle_ip"]
+	service_life_cycle_port = int(args["service_life_cycle_port"])
+	monitoring_ip = args["monitoring_ip"]
+	monitoring_port = int(args["monitoring_port"])
+	app.run(debug=True,port=7070) 

@@ -3,8 +3,9 @@ import sys, time
 import psutil
 import subprocess
 import json
+import os
 from random import random
-kafka_server = 'localhost:9092'
+kafka_server = '172.17.0.1:9092'
 
 def getConnectionDetails():
 	ip = sys.argv[1]
@@ -20,8 +21,7 @@ if __name__  == "__main__":
 	
 	ip, port, uname, passw = getConnectionDetails()
 
-	producer = kafka.KafkaProducer(bootstrap_servers=[kafka_server])
-
+	producer = kafka.KafkaProducer(bootstrap_servers=[kafka_server],value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 	while True:
 		stats = ip + ' ' + port + ' ' + uname + ' ' + passw + ' '
 
@@ -46,19 +46,17 @@ if __name__  == "__main__":
 		n_cores = psutil.cpu_count()
 		stats += str(n_cores) + ' '
 
-		la = psutil.getloadavg()
-		la1 = la[0]
+		la1,la2,la3 = os.getloadavg()
+		
 		stats += str(la1) + ' '
 
-		la2 = la[1]
 		stats += str(la2) + ' '
 
-		la3 = la[2]
 		stats += str(la3) + ' '
 
-		# print(stats)
+		print(stats)
 		
-		producer.send('platform_monitor', bytearray(stats,'utf-8'))
+		producer.send('platform_monitor_', stats)
 		producer.flush()
 
 		time.sleep(2)
