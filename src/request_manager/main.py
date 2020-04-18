@@ -67,7 +67,9 @@ import requests
 file=open("user_config.json","r")
 config_data=json.load(file)
 
-data={"action":"Start","servicename":"service-4","config":config_data}
+# data={"action":"Start","servicename":"service-4","config":config_data}
+data={"action":"None","servicename":"service-4","config":config_data}
+# data={"action":"Stop","servicename":"service-4","config":config_data}
 
 print(sys.argv[1])
 res = requests.post('http://localhost:'+str(sys.argv[1])+'/schedule_service', json=data)
