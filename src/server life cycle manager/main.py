@@ -21,9 +21,7 @@ def load_balance():
 		coeff1=1/((3/data["server_load"][i]["free_cpu"])+(1/data["server_load"][i]["free_mem"]))
 		coeff2=data["server_load"][i]["number_of_events_per_sec"]/10000 + min(2,data["server_load"][i]["free_RAM"])
 		coeff3=1 if data["server_load"][i]["temperature"] < 70 else 0
-
 		coeff=coeff1*coeff2*coeff3
-
 		loads.append((coeff,data["server_load"][i]["ip"],data["server_load"][i]["port"],data["server_load"][i]["username"],data["server_load"][i]["password"]))
 
 	if(len(loads)==0):
