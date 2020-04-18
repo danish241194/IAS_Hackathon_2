@@ -41,6 +41,7 @@ def setup_new_machine(ip,username,password,port):
 	ftp_client.close()
 	ssh_client.exec_command("python3 machineagent.py "+str(ip)+" "+port+" "+username+" "+password)
 	ssh_client.close()
+	
 def allocate_new_machine():
 	result,ip,username,password="","","",""
 	res = requests.get('http://localhost:6060/service_registry/get_free_list')
@@ -55,7 +56,6 @@ def allocate_new_machine():
 		port = free_list[0].split(":")[3]
 		setup_new_machine(ip,username,password,port)
 	return result,ip,username,password,port
-
 
 def allocate_server_kernel(serviceid):
 	global testing_new_machine

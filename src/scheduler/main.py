@@ -197,7 +197,6 @@ class Scheduler:
             result = "ERROR : wrong scheduling format"
         return result,service_instance_id
 
-
 import json
 
 def GetDict(services):
@@ -280,7 +279,7 @@ def Convert(data):
     return return_data
    
 
-@app.route('/schedule_service', methods=['GET', 'POST'])
+@app.route('/scheduler/schedule', methods=['GET', 'POST'])
 def schedule_service():
     content = request.json
     extracted_requests = Convert(content)
@@ -292,6 +291,7 @@ def schedule_service():
         if(result!="OK"):
             res="ERROR : wrong scheduling format"
     return {"result":res}
+
 sch = None
 def dumping_thread():
     global sch
