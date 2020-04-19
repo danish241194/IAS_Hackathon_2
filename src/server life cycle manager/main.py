@@ -5,16 +5,17 @@ import threading
 import paramiko
 import argparse
 import time
+import sys
 app = Flask(__name__)
 
 testing_new_machine  = True
 lock_load = threading.Lock()
 lock_allocate = threading.Lock()
 
-service_life_cycle_ip = None
-service_life_cycle_port = None
-monitoring_ip = None
-monitoring_port = None
+service_life_cycle_ip = "127.0.0.1"
+service_life_cycle_port = 8080 
+monitoring_ip = "127.0.0.1"
+monitoring_port = 5055
 
 # @app.route("/serverlcm/check/<username>")
 # def test(username):
@@ -29,7 +30,7 @@ def GetDetails(service_life_cycle_ip,service_life_cycle_port,username):
 
 def load_balance():
 	lock_load.acquire()
-	monitoring_ip,monitoring_port=GetDetails(service_life_cycle_ip,service_life_cycle_port,"monitoring")
+	# monitoring_ip,monitoring_port=GetDetails(service_life_cycle_ip,service_life_cycle_port,"monitoring")
 	res=requests.get('http://'+monitoring_ip+':'+str(monitoring_port)+'/monitoring/getLoad')
 	data=res.json()
 	loads=[]
@@ -112,14 +113,14 @@ def allocate_server(serviceid):
 	return resp
 
 if __name__ == "__main__":        # on running python app.py
-	ap = argparse.ArgumentParser()
-	ap.add_argument("-a","--service_life_cycle_ip",required=True)
-	ap.add_argument("-b","--service_life_cycle_port",required=True)
+	# ap = argparse.ArgumentParser()
+	# ap.add_argument("-a","--service_life_cycle_ip",required=True)
+	# ap.add_argument("-b","--service_life_cycle_port",required=True)
 	# ap.add_argument("-c","--monitoring_ip",required=True)
 	# ap.add_argument("-d","--monitoring_port",required=True)
-	args = vars(ap.parse_args())          
-	service_life_cycle_ip = args["service_life_cycle_ip"]
-	service_life_cycle_port = int(args["service_life_cycle_port"])
+	# args = vars(ap.parse_args())          
+	# service_life_cycle_ip = args["service_life_cycle_ip"]
+	# service_life_cycle_port = int(args["service_life_cycle_port"])
 	# monitoring_ip = args["monitoring_ip"]
 	# monitoring_port = int(args["monitoring_port"])
-	app.run(debug=True,port=7070) 
+	app.run(debug=True,port=int(5054)) 

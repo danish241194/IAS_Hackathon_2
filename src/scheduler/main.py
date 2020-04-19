@@ -12,8 +12,8 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-service_life_cycle_ip = None
-service_life_cycle_port = None
+service_life_cycle_ip = "127.0.0.1"
+service_life_cycle_port = 8080
 Myport = None
 
 def time_add(time,minutes_to_add) :
@@ -362,14 +362,14 @@ def dumping_thread():
 
             
 if __name__ == "__main__": 
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-p","--port",required=True)
-    ap.add_argument("-i","--service_life_cycle_ip",required=True)
-    ap.add_argument("-x","--service_life_cycle_port",required=True)
-    args = vars(ap.parse_args())          
-    service_life_cycle_ip = args["service_life_cycle_ip"]
-    service_life_cycle_port = int(args["service_life_cycle_port"])
-    Myport = args["port"]
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument("-p","--port",required=True)
+    # ap.add_argument("-i","--service_life_cycle_ip",required=True)
+    # ap.add_argument("-x","--service_life_cycle_port",required=True)
+    # args = vars(ap.parse_args())          
+    # service_life_cycle_ip = args["service_life_cycle_ip"]
+    # service_life_cycle_port = int(args["service_life_cycle_port"])
+    # Myport = args["port"]
     sch = Scheduler()
     sch.run()
     '''
@@ -390,7 +390,7 @@ if __name__ == "__main__":
 
     t2 = threading.Thread(target=dumping_thread) 
     t2.start()
-    app.run(debug=False,port=int(Myport)) 
+    app.run(debug=False,port=int(5053)) 
 
 
 
