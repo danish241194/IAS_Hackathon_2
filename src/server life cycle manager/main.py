@@ -4,6 +4,7 @@ import json
 import threading
 import paramiko
 import argparse
+import time
 app = Flask(__name__)
 
 testing_new_machine  = True
@@ -15,8 +16,20 @@ service_life_cycle_port = None
 monitoring_ip = None
 monitoring_port = None
 
+# @app.route("/serverlcm/check/<username>")
+# def test(username):
+# 	ip,port=GetDetails(service_life_cycle_ip,service_life_cycle_port,username)
+# 	print((ip,port))
+# 	return (ip,port)
+
+def GetDetails(service_life_cycle_ip,service_life_cycle_port,username):
+	res=requests.get('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/topology/'+username)
+	data=res.json()[0]
+	return data["ip"],data["port"]
+
 def load_balance():
 	lock_load.acquire()
+	monitoring_ip,monitoring_port=GetDetails(service_life_cycle_ip,service_life_cycle_port,"monitoring")
 	res=requests.get('http://'+monitoring_ip+':'+str(monitoring_port)+'/monitoring/getLoad')
 	data=res.json()
 	loads=[]
@@ -102,11 +115,11 @@ if __name__ == "__main__":        # on running python app.py
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-a","--service_life_cycle_ip",required=True)
 	ap.add_argument("-b","--service_life_cycle_port",required=True)
-	ap.add_argument("-c","--monitoring_ip",required=True)
-	ap.add_argument("-d","--monitoring_port",required=True)
+	# ap.add_argument("-c","--monitoring_ip",required=True)
+	# ap.add_argument("-d","--monitoring_port",required=True)
 	args = vars(ap.parse_args())          
 	service_life_cycle_ip = args["service_life_cycle_ip"]
 	service_life_cycle_port = int(args["service_life_cycle_port"])
-	monitoring_ip = args["monitoring_ip"]
-	monitoring_port = int(args["monitoring_port"])
+	# monitoring_ip = args["monitoring_ip"]
+	# monitoring_port = int(args["monitoring_port"])
 	app.run(debug=True,port=7070) 

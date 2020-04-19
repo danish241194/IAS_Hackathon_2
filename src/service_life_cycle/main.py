@@ -25,5 +25,18 @@ def receive():
 	resp = Response(json.dumps(data), status=200, mimetype='application/json')
 	return resp
 
+@app.route('/servicelcm/service/topology/<username>')
+def process(username):
+	file=open("meta.json")
+	data=json.load(file)
+	send_data=None
+
+	for _ in data:
+		if(_["serviceName"]==username):
+			send_data=_
+			break
+	return json.dumps([send_data])
+
+
 if __name__ == "__main__":        # on running python app.py
 	app.run(debug=True,port=5075) 

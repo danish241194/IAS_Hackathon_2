@@ -1,0 +1,38 @@
+[
+    {
+        "serviceId": "s1",
+        "serviceName": "scheduler",
+        "username": "u1",
+        "status": "alive",
+        "ip": "127.0.0.1",
+        "port": "5555",
+        "containerId": "8158b4e4c8e3",
+        "redeployRequest": "true",
+        "applicationName": "Appname 1",
+        "dependencyCount": 0
+    },
+    {
+        "serviceId": "s1",
+        "serviceName": "requestmanager",
+        "username": "u1",
+        "status": "alive",
+        "ip": "127.0.0.1",
+        "port": "5555",
+        "containerId": "8158b4e4c8e3",
+        "redeployRequest": "true",
+        "applicationName": "Appname 1",
+        "dependencyCount": 0
+    },
+    {
+        "serviceId": "s1",
+        "serviceName": "serverlcm",
+        "username": "u1",
+        "status": "alive",
+        "ip": "127.0.0.1",
+        "port": "5555",
+        "containerId": "8158b4e4c8e3",
+        "redeployRequest": "true",
+        "applicationName": "Appname 1",
+        "dependencyCount": 0
+    }
+]
