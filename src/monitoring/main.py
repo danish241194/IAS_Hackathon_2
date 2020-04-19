@@ -104,7 +104,8 @@ def req_handler(app, port, mycollection):
 
 if __name__ == "__main__":
 	app = flask.Flask('sensor_app')
-	port = sys.argv[1]
+	# port = sys.argv[1]
+	port=5055
 	client = connectMongoDB()
 	mycollection = getCollection(client)
 	req_t = threading.Thread(target = req_handler, args = (app, port, mycollection))
