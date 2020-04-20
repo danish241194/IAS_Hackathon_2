@@ -56,7 +56,7 @@ if __name__  == "__main__":
 
 		print(stats)
 		
-		producer.send('platform_monitor_', stats)
+		producer.send('platform_monitor', stats)
 		producer.flush()
 
 		time.sleep(2)

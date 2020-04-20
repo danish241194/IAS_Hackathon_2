@@ -10,10 +10,10 @@ app = Flask(__name__)
 #     print(content)
 #     return {"result":"OK"}
 
-@app.route('/make_request')
-def start_stop_service():
-    i="test"
-    r=requests.get(url="http://127.0.0.1:7070/serverlcm/allocate_server/"+i)
+@app.route('/make_request/<i>')
+def start_stop_service(i):
+    # i="jay_krishna"
+    r=requests.get(url="http://127.0.0.1:5054/serverlcm/allocate_server/"+i)
     return r.json()
 
 @app.route("/servicelcm/service/update",methods=['POST'])
@@ -23,6 +23,7 @@ def receive():
 
 	data={"status":"ok"}
 	resp = Response(json.dumps(data), status=200, mimetype='application/json')
+	# print(resp.json)
 	return resp
 
 @app.route('/servicelcm/service/topology/<username>')
@@ -39,4 +40,4 @@ def process(username):
 
 
 if __name__ == "__main__":        # on running python app.py
-	app.run(debug=True,port=5075) 
+	app.run(debug=True,port=8080) 

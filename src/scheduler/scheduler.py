@@ -9,10 +9,13 @@ import json
 import requests
 import argparse
 from datetime import datetime
+
 app = Flask(__name__)
+
 service_life_cycle_ip = "127.0.0.1"
 service_life_cycle_port = 8080
 Myport = 5053
+
 def time_add(time,minutes_to_add) :
      hr = int(str(time).split(":")[0])
      mn = int(str(time).split(":")[1])
@@ -26,6 +29,8 @@ def time_add(time,minutes_to_add) :
      if(len(mn)==1):
          mn="0"+mn
      return hr+":"+mn
+
+
 class Scheduler:
     def __init__(self):   
         self.job_dict = {}
@@ -33,18 +38,19 @@ class Scheduler:
         self.single_instances ={} #
         self.started = {} #done
         self.loop_schedules=[] #done
+
     def pending_jobs(self):
         while True: 
             schedule.run_pending() 
             time.sleep(10)
+
     def send_request_to_service_life_cyle(self,username,application_id,service_name,service_instance_id,type_):
         response = {"username":username,"applicationname":application_id,"servicename":service_name,"serviceId":self.main_service_id_dict[service_instance_id]}
+        print(response)
         if type_=="start":
-            print(response)
             res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/start', json=response)
         else:
-            print(res)
-            res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json =response)
+            res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json=response)
         
     def run(self):
         t1 = threading.Thread(target=self.pending_jobs) 
@@ -78,9 +84,11 @@ class Scheduler:
         print("+MSG TO SLCM TO START \t\t",service_instance_id)
         #send request to service life cycle manager to start service
         self.send_request_to_service_life_cyle(username,application_id,service_name,service_instance_id,"start")
+
         now = datetime.now()
         current_time = now.strftime("%H:%M")
         end_time = time_add(current_time,int(end))
+
         data = {
                "service_id": service_instance_id,
                "username":username,
@@ -89,6 +97,7 @@ class Scheduler:
                "end":end_time
         }
         self.started[service_instance_id]=data
+
         job_id = schedule.every().day.at(end_time).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
         self.job_dict[service_instance_id]=job_id
         
@@ -121,6 +130,7 @@ class Scheduler:
             job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
             self.job_dict[service_instance_id]=job_id
             del self.started[service_instance_id]
+
     def schedule(self,request_):
         username = request_["username"]
         application_id = request_["application_id"]
@@ -187,10 +197,13 @@ class Scheduler:
         else:
             result = "ERROR : wrong scheduling format"
         return result,service_instance_id
+
 def GetDict(services):
     d={}
+
     for _ in services:
         d[_]=False
+
     return d
 def ConstructDict(data):
     forward_dict={}
@@ -199,18 +212,25 @@ def ConstructDict(data):
         forward_dict[_]=data[_]["servicename"]
     for key,values in forward_dict.items():
         backward_dict[values]=key
+
     return forward_dict,backward_dict
+
 def Make_Data(username,application_id,service_name,start_time=None,end_time=None,singleinstance=False,day=None,period=None):
     data_dict={"username":username,"application_id":application_id,"service_name":service_name,"singleinstance":singleinstance,"day":day,"start_time":start_time,"end_time":end_time,"period":period}
+
     return data_dict
+
 def GetServices(data,all_services):
     services=[]
     for _ in all_services:
         if(data[_]["scheduled"]=="True"):
             services.append(_)
+
     return services
+
 def Convert(data):
     return_data=[]
+
     username=data["Application"]["username"]
     application_id=data["Application"]["applicationname"]
     all_services=list(data["Application"]["services"].keys())
@@ -225,22 +245,27 @@ def Convert(data):
         #   continue
         bool_dict=GetDict(all_services)
         bool_dict[service]=True
+
         order_dependency=[]
         stack=[]
         stack.append(service)
+
         while(len(stack) > 0):
             # print(order_dependency)
             temp=stack.pop()
             if(temp!=service):
                 order_dependency.append(temp)
+
             curr_dep=data["Application"]["services"][temp]["dependency"]
             for _ in curr_dep:
                 if(not bool_dict[backward_dict[_]]):
                     stack.append(backward_dict[_])
                     bool_dict[backward_dict[_]]=True
+
         order_dependency=order_dependency[::-1]
         order_dependency.append(service)
         # print(order_dependency)
+
         if(data["Application"]["services"][service]["period"]!="None"):
             for service_dep in order_dependency:
                 return_data.append(Make_Data(username=username,application_id=application_id,service_name=forward_dict[service_dep],singleinstance="False",period=data["Application"]["services"][service]["period"]))
@@ -248,11 +273,13 @@ def Convert(data):
             times=[]
             days=[]
             flags=[True,True]
+
             if "time" in data["Application"]["services"][service].keys():
                 times=[(s,e) for s,e in zip(data["Application"]["services"][service]["time"]["start"],data["Application"]["services"][service]["time"]["end"])]
             else:
                 times.append((None,None))
                 flags[0]=False
+
             if "days" in data["Application"]["services"][service].keys():
                 days=[_ for _ in data["Application"]["services"][service]["days"]]
             else:
@@ -268,7 +295,9 @@ def Convert(data):
                 for service_dep in order_dependency:
                     for time in times:
                         return_data.append(Make_Data(username=username,application_id=application_id,service_name=forward_dict[service_dep],singleinstance=data["Application"]["services"][service]["singleinstance"],start_time=time[0],end_time=time[1]))
+
     return return_data
+
 def ChangeData(data,name):
     for _ in data["Application"]["services"].keys():
         if(_ != name):
@@ -278,8 +307,10 @@ def ChangeData(data,name):
             del data["Application"]["services"][_]["days"]
             data["Application"]["services"][_]["time"]["start"]=["NOW"]
             data["Application"]["services"][_]["time"]["end"]=["23:45"]
+
     return data
    
+
 @app.route('/schedule_service', methods=['GET', 'POST'])
 def schedule_service():
     content = request.get_json()
@@ -287,10 +318,12 @@ def schedule_service():
     res = "OK"
     if(content["action"]=="Stop"):
         id_ = content["config"]["Application"]["username"]+"_"+content["config"]["Application"]["applicationname"]+"_"+content["config"]["Application"]["services"][content["servicename"]]["servicename"]
+
         response = {"username":content["config"]["Application"]["username"],"applicationname":content["config"]["Application"]["applicationname"],"servicename":content["config"]["Application"]["services"][content["servicename"]]["servicename"],"serviceId":id_}
         
         res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json=response)
         print("+MSG TO SLCM TO STOP ",id_)
+
     else:
         if(content["action"]=="Start"):
             content["config"]=ChangeData(content["config"],content["servicename"])
@@ -330,6 +363,7 @@ def dumping_thread():
             send data to logging
         '''
            
+
             
 if __name__ == "__main__": 
     # ap = argparse.ArgumentParser()
@@ -349,6 +383,7 @@ if __name__ == "__main__":
         sch.single_instances = data["single_instance"] #dictionary
         sch.main_service_id_dict = data["main_service_id_dict"] #dictionary
         sch.stop_all_started_at_their_end_time()
+
         for key in sch.singleinstances.keys():
             sch.schedule(sch.single_instances[key])
         for request in sch.loop_schedules:
@@ -356,6 +391,10 @@ if __name__ == "__main__":
          #it covers both single instance and non single instances 
     '''
 
+
     t2 = threading.Thread(target=dumping_thread) 
     t2.start()
     app.run(debug=True,host="0.0.0.0",port=int(Myport)) 
+
+
+

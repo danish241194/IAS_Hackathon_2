@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 kafka_server = 'localhost:9092'
-topic = 'platform_monitor_'
+topic = 'platform_monitor'
 mongoDb_server = 'localhost:27017'
 
 def getCurrTimestamp():
