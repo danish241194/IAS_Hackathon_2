@@ -4,22 +4,22 @@
         "applicationname":"testapplication1",
         "services":{
             "service-1":{
-                "servicename":"automatedacservice",
-                "scheduled":"True",
+                "servicename":"automatedacservice11",
+                "scheduled":"False",
                 "filename":"automatedacservice.py",
                 "singleinstance":"True",
                 "time":{
                     "start":[
-                        "22:20"
+                        "16:42"
                       
                     ],
                     "end":[
-                        "22:22"
+                        "16:43"
                         
                     ]
                 },
                 "days":[
-                    "saturday"
+                    "tuesday"
                 ],
                 "period":"None",
                 "dependency":[

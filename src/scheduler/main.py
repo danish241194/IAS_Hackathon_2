@@ -9,6 +9,7 @@ import json
 import requests
 import argparse
 from datetime import datetime
+import pickle
 app = Flask(__name__)
 service_life_cycle_ip = "127.0.0.1"
 service_life_cycle_port = 8080
@@ -33,6 +34,7 @@ class Scheduler:
         self.single_instances ={} #
         self.started = {} #done
         self.loop_schedules=[] #done
+        self.main_id_sch_id={}
     def pending_jobs(self):
         while True: 
             schedule.run_pending() 
@@ -40,11 +42,11 @@ class Scheduler:
     def send_request_to_service_life_cyle(self,username,application_id,service_name,service_instance_id,type_):
         response = {"username":username,"applicationname":application_id,"servicename":service_name,"serviceId":self.main_service_id_dict[service_instance_id]}
         if type_=="start":
-            print(response)
-            res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/start', json=response)
+            # print(response)
+            # res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/start', json=response)
         else:
-            print(res)
-            res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json =response)
+            # print(res)
+            # res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json =response)
         
     def run(self):
         t1 = threading.Thread(target=self.pending_jobs) 
@@ -67,7 +69,8 @@ class Scheduler:
                "username":username,
                "application_id":application_id,
                "service_name":service_name,
-               "end":end
+               "end":end            
+
         }
         self.started[service_instance_id]=data
         job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
@@ -120,8 +123,9 @@ class Scheduler:
             service_instance_id,username,application_id,service_name,end = self.started[key]["service_id"],self.started[key]["username"],self.started[key]["application_id"],self.started[key]["service_name"],self.started[key]["end"]
             job_id = schedule.every().day.at(end).do(self.exit_service,((service_instance_id,username,application_id,service_name))) 
             self.job_dict[service_instance_id]=job_id
+            self.main_id_sch_id[service_instance_id]=username+"_"+application_id+"_"+service_name
             del self.started[service_instance_id]
-    def schedule(self,request_):
+    def schedule(self,request_,s_id=None):
         username = request_["username"]
         application_id = request_["application_id"]
         service_name = request_["service_name"]
@@ -130,9 +134,12 @@ class Scheduler:
         start_time = request_["start_time"]
         end = request_["end_time"]
         period = request_["period"]
-        service_instance_id=username+"_"+application_id+"_"+service_name+"_"+str(randrange(10000))
+        service_instance_id = s_id
+        if service_instance_id is None:
+            service_instance_id=username+"_"+application_id+"_"+service_name+"_"+str(randrange(10000))
         main_service_id = username+"_"+application_id+"_"+service_name
         self.main_service_id_dict[service_instance_id]=main_service_id
+        self.main_id_sch_id[main_service_id] = service_instance_id
         result = "OK"
         
         if(str(single_instance)=="True"):
@@ -162,14 +169,15 @@ class Scheduler:
                 job_id = schedule.every().day.at(start_time).do( self.run_service_once,((username,application_id,service_name,end,service_instance_id)))
                 self.job_dict[service_instance_id]=job_id
         elif day is None and period is not None:
-            self.loop_schedules.append(request_)
+            self.loop_schedules.append({"service_id":service_instance_id,"request": request_})
             interval = period["interval"]
             end = period["length"]
         
             job_id = schedule.every(interval).minutes.do( self.run_service_period,((username,application_id,service_name,end,service_instance_id)))
             self.job_dict[service_instance_id]=job_id
         elif day is not None:
-                self.loop_schedules.append(request_)
+                self.loop_schedules.append({"service_id":service_instance_id,"request": request_})
+                # self.loop_schedules.append(request_)
                 if(day=="monday"):
                     job_id = schedule.every().monday.at(start_time).do( self.run_service,((username,application_id,service_name,end,service_instance_id)))
                 elif(day=="tuesday"):
@@ -281,15 +289,17 @@ def ChangeData(data,name):
     return data
    
 @app.route('/schedule_service', methods=['GET', 'POST'])
-def schedule_service():
+def schedule_service():main_service_id_dict
     content = request.get_json()
     
     res = "OK"
     if(content["action"]=="Stop"):
         id_ = content["config"]["Application"]["username"]+"_"+content["config"]["Application"]["applicationname"]+"_"+content["config"]["Application"]["services"][content["servicename"]]["servicename"]
         response = {"username":content["config"]["Application"]["username"],"applicationname":content["config"]["Application"]["applicationname"],"servicename":content["config"]["Application"]["services"][content["servicename"]]["servicename"],"serviceId":id_}
-        
-        res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json=response)
+        del self.started[service_instance_id]
+        sch_job_id = self.main_id_sch_id[id_]
+        schedule.cancel_job(self.job_dict[sch_job_id])
+        # res = requests.post('http://'+service_life_cycle_ip+':'+str(service_life_cycle_port)+'/servicelcm/service/stop', json=response)
         print("+MSG TO SLCM TO STOP ",id_)
     else:
         if(content["action"]=="Start"):
@@ -320,15 +330,18 @@ def dumping_thread():
             print("\t- Schedules")
             print("\n\t\t",sch.loop_schedules)
             print("\n")
+            
             print("+ DUMPING DETAILS END")
-        '''
+        
             data = {"single_instance":sch.single_instances
                     "started":sch.started,
                     "schedules":sch.loop_schedules
-                    "main_service_id_dict":self.main_service_id_dict
+                    # "main_service_id_dict":self.main_service_id_dict
                     }
-            send data to logging
-        '''
+            pickle_out = open("sch_data.pickle","wb")
+            pickle.dump(data, pickle_out)
+            pickle_out.close() 
+        
            
             
 if __name__ == "__main__": 
@@ -342,6 +355,29 @@ if __name__ == "__main__":
     # Myport = args["port"]
     sch = Scheduler()
     sch.run()
+    try:
+        dbfile = open("sch_data.pickle","rb")
+        db = pickle.load(dbfile)
+
+        schedules_ = db["schedules"]
+        started = db["started"]
+        single_instances = db["single_instance"]
+
+        sch.loop_schedules == schedules_
+        sch.single_instances = single_instances
+        sch.started = started
+        for schedue in schedules:
+            {"service_id":service_instance_id,"request": request_}
+            single_instance_id = schedue["service_id"]
+            request_ = schedule["request"]
+            sch.schedule(scheduling_request,single_instance_id)
+
+        for key in single_instances.keys():
+            sch.schedule(single_instances,key)
+        sch.stop_all_started_at_their_end_time()
+    except:
+        print("NO PREVIOUS DATA")
+
     '''
         retrieve data from logging service
         sch.started = data["started"]    #dictionary
