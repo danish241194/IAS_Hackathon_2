@@ -378,7 +378,7 @@ def dumping_thread():
                     # "main_service_id_dict":self.main_service_id_dict
                     }
            
-            pickle_out = open("sch_data.pickle","wb")
+            pickle_out = open("/home/sch_data.pickle","wb")
             pickle.dump(data, pickle_out)
             pickle_out.close() 
            
@@ -412,7 +412,7 @@ if __name__ == "__main__":
 
     try:
 
-        dbfile = open("sch_data.pickle","rb")
+        dbfile = open("/home/sch_data.pickle","rb")
         db = pickle.load(dbfile)
 
         schedules_ = db["schedules"]
