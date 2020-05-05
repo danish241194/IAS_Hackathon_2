@@ -21,6 +21,8 @@
                 ],
                 "period":"None",
                 "dependency":[
+                    "service-2",
+                    "service-3"
                 ],
                 "environment":{
                     "python3":true,
@@ -82,7 +84,7 @@
             },
             "service-2":{
                 "servicename":"service-2",
-                "scheduled":"True",
+                "scheduled":"False",
                 "filename":"emergencyfiirealaram.py",
                 "singleinstance":"True",
                 "time":{
@@ -98,7 +100,7 @@
                 ],
                 "period":"None",
                 "dependency":[
-
+                    "service-4"
                 ],
                 "environment":{
                     "python3":true,
@@ -174,7 +176,7 @@
             },
             "service-3":{
                 "servicename":"service-3",
-                "scheduled":"True",
+                "scheduled":"False",
                 "filename":"illegalaccessdetection.py",
                 "singleinstance":"True",
                 "time":{
